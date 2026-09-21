@@ -41,8 +41,95 @@ export function exportToCSV(filename: string, headers: string[], rows: (string |
   URL.revokeObjectURL(url);
 }
 
+export interface ReportTableSection {
+  title: string;
+  headers: string[];
+  rows: (string | number | boolean | null | undefined)[][];
+}
+
 /**
- * Downloads a structured JavaScript object or array as a formatted .json file.
+ * Generates a styled Excel / Web-compatible document (.xls / .html) that a normal person can open in Microsoft Excel or any Browser.
+ */
+export function exportToExcelHTML(filename: string, reportTitle: string, sections: ReportTableSection[]): void {
+  const currentDate = new Date().toLocaleString();
+
+  let html = `
+  <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>${reportTitle}</title>
+    <style>
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #F8FAFC; color: #1E293B; }
+      .header-card { background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); color: #FFFFFF; padding: 24px; border-radius: 12px; margin-bottom: 24px; }
+      .header-card h1 { margin: 0 0 6px 0; font-size: 24px; color: #F97316; }
+      .header-card p { margin: 0; font-size: 13px; color: #94A3B8; }
+      .section-card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 20px; margin-bottom: 24px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+      .section-title { font-size: 18px; font-weight: 700; color: #0F172A; margin: 0 0 14px 0; border-bottom: 2px solid #F97316; padding-bottom: 6px; display: flex; justify-content: space-between; }
+      table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+      th { background-color: #F1F5F9; color: #334155; font-weight: 700; text-align: left; padding: 10px 12px; border: 1px solid #CBD5E1; }
+      td { padding: 9px 12px; border: 1px solid #E2E8F0; color: #1E293B; }
+      tr:nth-child(even) { background-color: #F8FAFC; }
+      tr:hover { background-color: #FFF7ED; }
+      .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+      .badge-success { background-color: #DCFCE7; color: #15803D; }
+      .badge-warning { background-color: #FEF3C7; color: #B45309; }
+      .footer { text-align: center; font-size: 12px; color: #94A3B8; margin-top: 30px; }
+    </style>
+  </head>
+  <body>
+    <div class="header-card">
+      <h1>LedgerFlow Enterprise - Financial Management System</h1>
+      <p><strong>${reportTitle}</strong> | Generated on: ${currentDate}</p>
+    </div>
+  `;
+
+  sections.forEach(sec => {
+    html += `
+      <div class="section-card">
+        <div class="section-title">
+          <span>${sec.title}</span>
+          <span style="font-size: 13px; color: #64748B; font-weight: normal;">Total Records: ${sec.rows.length}</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              ${sec.headers.map(h => `<th>${h}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${sec.rows.length === 0 ? `<tr><td colspan="${sec.headers.length}" style="text-align: center; color: #94A3B8; padding: 16px;">No records recorded.</td></tr>` : ''}
+            ${sec.rows.map(row => `
+              <tr>
+                ${row.map(cell => `<td>${cell === null || cell === undefined ? '-' : String(cell)}</td>`).join('')}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  });
+
+  html += `
+    <div class="footer">
+      <p>Report generated automatically by LedgerFlow Financial System. Confidential financial records.</p>
+    </div>
+  </body>
+  </html>
+  `;
+
+  const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename.endsWith('.xls') || filename.endsWith('.html') ? filename : `${filename}.xls`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Downloads a structured JavaScript object or array as a formatted .json file (for technical/system restore).
  */
 export function exportToJSON(filename: string, data: any): void {
   const jsonContent = JSON.stringify(data, null, 2);

@@ -1,23 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { 
   Download, UploadCloud, FileSpreadsheet, FileCode, 
   FolderTree, BookOpen, FileText, Receipt, Landmark, 
-  RefreshCw, ArrowUpDown, Layers, HardDrive
+  RefreshCw, ArrowUpDown, Layers, HardDrive, Eye
 } from 'lucide-react';
-import type { ImportType } from '../utils/exportImportUtils';
+import type { ImportType, ReportTableSection } from '../utils/exportImportUtils';
 import { 
-  exportToCSV, exportToJSON, downloadSampleTemplate, fetchExportFromBackend 
+  exportToCSV, exportToJSON, exportToExcelHTML, downloadSampleTemplate, fetchExportFromBackend 
 } from '../utils/exportImportUtils';
 import { ImportModal } from '../components/ImportModal';
+import { DataViewerModal } from '../components/DataViewerModal';
 import type { BankAccount } from '../types';
 
 export const DataHubView: React.FC = () => {
   const { showToast, activeRole } = useAuth();
+  const { formatCurrency } = useCurrency();
 
   const [activeImportType, setActiveImportType] = useState<ImportType | null>(null);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
+  const [showViewerModal, setShowViewerModal] = useState<boolean>(false);
+  const [viewerTab, setViewerTab] = useState<'accounts' | 'vouchers' | 'invoices' | 'bills' | 'customers' | 'vendors' | 'banking'>('accounts');
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [stats, setStats] = useState<{
     accountsCount: number;
@@ -47,13 +52,13 @@ export const DataHubView: React.FC = () => {
     try {
       setLoadingStats(true);
       const [resAcc, resEntries, resInv, resBills, resCust, resVend, resBanks] = await Promise.all([
-        api.get('accounts/'),
-        api.get('journal-entries/'),
-        api.get('invoices/'),
-        api.get('bills/'),
-        api.get('customers/'),
-        api.get('vendors/'),
-        api.get('bank-accounts/')
+        api.get('accounts/').catch(() => ({ data: [] })),
+        api.get('journal-entries/').catch(() => ({ data: [] })),
+        api.get('invoices/').catch(() => ({ data: [] })),
+        api.get('bills/').catch(() => ({ data: [] })),
+        api.get('customers/').catch(() => ({ data: [] })),
+        api.get('vendors/').catch(() => ({ data: [] })),
+        api.get('bank-accounts/').catch(() => ({ data: [] }))
       ]);
 
       const getCount = (data: any) => Array.isArray(data) ? data.length : (data.results ? data.results.length : 0);
@@ -76,7 +81,82 @@ export const DataHubView: React.FC = () => {
     }
   };
 
-  const handleExportDataset = async (type: ImportType, format: 'csv' | 'json') => {
+  /**
+   * Generates a complete, multi-table Excel / Web workbook (.xls) with formatted tables
+   * that any normal person can open in Excel, Google Sheets, or Browser.
+   */
+  const handleExportMasterExcel = async () => {
+    try {
+      setExportingType('master-excel');
+      const timestamp = new Date().toISOString().split('T')[0];
+
+      const [resAcc, resEntries, resInv, resBills, resCust, resVend, resBanks] = await Promise.all([
+        api.get('accounts/').catch(() => ({ data: [] })),
+        api.get('journal-entries/').catch(() => ({ data: [] })),
+        api.get('invoices/').catch(() => ({ data: [] })),
+        api.get('bills/').catch(() => ({ data: [] })),
+        api.get('customers/').catch(() => ({ data: [] })),
+        api.get('vendors/').catch(() => ({ data: [] })),
+        api.get('bank-transactions/').catch(() => ({ data: [] }))
+      ]);
+
+      const getList = (res: any) => Array.isArray(res.data) ? res.data : (res.data?.results || []);
+      const accounts = getList(resAcc);
+      const entries = getList(resEntries);
+      const invoices = getList(resInv);
+      const bills = getList(resBills);
+      const customers = getList(resCust);
+      const vendors = getList(resVend);
+      const bankTxns = getList(resBanks);
+
+      const sections: ReportTableSection[] = [
+        {
+          title: '1. CHART OF ACCOUNTS (COA)',
+          headers: ['Account Code', 'Account Name', 'Category', 'Opening Balance', 'Current Balance', 'Active Status'],
+          rows: accounts.map((a: any) => [a.code, a.name, a.category, formatCurrency(a.opening_balance), formatCurrency(a.current_balance), a.is_active ? 'Active' : 'Inactive'])
+        },
+        {
+          title: '2. JOURNAL ENTRIES & VOUCHERS',
+          headers: ['Voucher Number', 'Date', 'Type', 'Status', 'Narration', 'Total Debit', 'Total Credit', 'Balanced'],
+          rows: entries.map((v: any) => [v.entry_number, v.date, v.entry_type, v.status, v.narration, formatCurrency(v.total_debit), formatCurrency(v.total_credit), v.is_balanced ? 'Balanced' : 'Unbalanced'])
+        },
+        {
+          title: '3. SALES INVOICES (ACCOUNTS RECEIVABLE)',
+          headers: ['Invoice #', 'Customer Name', 'Issue Date', 'Due Date', 'Subtotal', 'Tax Amount', 'Grand Total', 'Status', 'Paid Amount', 'Remaining Due'],
+          rows: invoices.map((inv: any) => [inv.invoice_number, inv.customer_details?.name || inv.customer, inv.issue_date, inv.due_date, formatCurrency(inv.subtotal), formatCurrency(inv.tax_amount), formatCurrency(inv.grand_total), inv.status, formatCurrency(inv.paid_amount), formatCurrency(inv.remaining_balance)])
+        },
+        {
+          title: '4. PURCHASE BILLS (ACCOUNTS PAYABLE)',
+          headers: ['Bill #', 'Vendor Name', 'Issue Date', 'Due Date', 'Subtotal', 'Tax Amount', 'Grand Total', 'Status', 'Paid Amount', 'Remaining Due'],
+          rows: bills.map((b: any) => [b.bill_number, b.vendor_details?.name || b.vendor, b.issue_date, b.due_date, formatCurrency(b.subtotal), formatCurrency(b.tax_amount), formatCurrency(b.grand_total), b.status, formatCurrency(b.paid_amount), formatCurrency(b.remaining_balance)])
+        },
+        {
+          title: '5. CUSTOMERS DIRECTORY',
+          headers: ['Name', 'Email', 'Phone', 'Address', 'Tax ID'],
+          rows: customers.map((c: any) => [c.name, c.email, c.phone, c.address, c.tax_id])
+        },
+        {
+          title: '6. VENDORS DIRECTORY',
+          headers: ['Name', 'Email', 'Phone', 'Address', 'Tax ID'],
+          rows: vendors.map((v: any) => [v.name, v.email, v.phone, v.address, v.tax_id])
+        },
+        {
+          title: '7. BANK TRANSACTIONS & RECONCILIATION',
+          headers: ['Date', 'Bank Account', 'Description', 'Reference', 'Amount', 'Reconciled'],
+          rows: bankTxns.map((t: any) => [t.transaction_date, t.bank_account, t.description, t.reference, formatCurrency(t.amount), t.is_reconciled ? 'Reconciled' : 'Pending'])
+        }
+      ];
+
+      exportToExcelHTML(`ledgerflow_master_financial_workbook_${timestamp}.xls`, 'LedgerFlow Enterprise - Master Financial Records Workbook', sections);
+      showToast('Human-readable Master Excel Workbook downloaded successfully! Open in Microsoft Excel.', 'success');
+    } catch (err: any) {
+      showToast(`Master export failed: ${err.message}`, 'error');
+    } finally {
+      setExportingType(null);
+    }
+  };
+
+  const handleExportDataset = async (type: ImportType, format: 'csv' | 'json' | 'excel') => {
     try {
       setExportingType(`${type}-${format}`);
       const timestamp = new Date().toISOString().split('T')[0];
@@ -84,7 +164,7 @@ export const DataHubView: React.FC = () => {
       if (type === 'all') {
         const fullBackup = await fetchExportFromBackend('all');
         exportToJSON(`ledgerflow_backup_${timestamp}.json`, fullBackup);
-        showToast('Full system backup exported successfully!', 'success');
+        showToast('System Backup (JSON) exported! (Use this file to restore data into the system)', 'success');
         return;
       }
 
@@ -92,6 +172,39 @@ export const DataHubView: React.FC = () => {
         const res = await fetchExportFromBackend(type);
         exportToJSON(`ledgerflow_${type}_${timestamp}.json`, res.data?.[type] || res.data || res);
         showToast(`Exported ${type} to JSON!`, 'success');
+        return;
+      }
+
+      // Single dataset Excel format
+      if (format === 'excel') {
+        const res = await api.get(type === 'accounts' ? 'accounts/' : type === 'vouchers' ? 'journal-entries/' : type === 'invoices' ? 'invoices/' : type === 'bills' ? 'bills/' : type === 'customers' ? 'customers/' : type === 'vendors' ? 'vendors/' : 'bank-transactions/');
+        const list = Array.isArray(res.data) ? res.data : (res.data.results || []);
+        
+        let headers: string[] = [];
+        let rows: any[][] = [];
+
+        if (type === 'accounts') {
+          headers = ['Account Code', 'Account Name', 'Category', 'Opening Balance', 'Current Balance', 'Status'];
+          rows = list.map((a: any) => [a.code, a.name, a.category, formatCurrency(a.opening_balance), formatCurrency(a.current_balance), a.is_active ? 'Active' : 'Inactive']);
+        } else if (type === 'vouchers') {
+          headers = ['Voucher No', 'Date', 'Type', 'Status', 'Narration', 'Total Debit', 'Total Credit', 'Balanced'];
+          rows = list.map((v: any) => [v.entry_number, v.date, v.entry_type, v.status, v.narration, formatCurrency(v.total_debit), formatCurrency(v.total_credit), v.is_balanced ? 'Balanced' : 'Unbalanced']);
+        } else if (type === 'invoices') {
+          headers = ['Invoice #', 'Customer', 'Issue Date', 'Due Date', 'Subtotal', 'Tax', 'Grand Total', 'Status', 'Paid', 'Due'];
+          rows = list.map((inv: any) => [inv.invoice_number, inv.customer_details?.name || inv.customer, inv.issue_date, inv.due_date, formatCurrency(inv.subtotal), formatCurrency(inv.tax_amount), formatCurrency(inv.grand_total), inv.status, formatCurrency(inv.paid_amount), formatCurrency(inv.remaining_balance)]);
+        } else if (type === 'bills') {
+          headers = ['Bill #', 'Vendor', 'Issue Date', 'Due Date', 'Subtotal', 'Tax', 'Grand Total', 'Status', 'Paid', 'Due'];
+          rows = list.map((b: any) => [b.bill_number, b.vendor_details?.name || b.vendor, b.issue_date, b.due_date, formatCurrency(b.subtotal), formatCurrency(b.tax_amount), formatCurrency(b.grand_total), b.status, formatCurrency(b.paid_amount), formatCurrency(b.remaining_balance)]);
+        } else if (type === 'customers' || type === 'vendors') {
+          headers = ['Name', 'Email', 'Phone', 'Address', 'Tax ID'];
+          rows = list.map((c: any) => [c.name, c.email, c.phone, c.address, c.tax_id]);
+        } else if (type === 'banking') {
+          headers = ['Date', 'Bank Account', 'Description', 'Reference', 'Amount', 'Reconciled'];
+          rows = list.map((t: any) => [t.transaction_date, t.bank_account, t.description, t.reference, formatCurrency(t.amount), t.is_reconciled ? 'Yes' : 'No']);
+        }
+
+        exportToExcelHTML(`ledgerflow_${type}_${timestamp}.xls`, `LedgerFlow - ${type.toUpperCase()} Report`, [{ title: type.toUpperCase(), headers, rows }]);
+        showToast(`Exported ${type} to Excel!`, 'success');
         return;
       }
 
@@ -303,29 +416,56 @@ export const DataHubView: React.FC = () => {
             </div>
             <div>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: '#FFFFFF' }}>
-                Full System Database Backup & Disaster Recovery
+                Financial Data Export & Disaster Recovery
               </h3>
-              <p style={{ color: '#D1D5DB', fontSize: '0.85rem', margin: '4px 0 0', maxWidth: '600px' }}>
-                Create a complete single-file snapshot of all accounts, journal vouchers, invoices, bills, customers, vendors, and bank records for safe archival or migration.
+              <p style={{ color: '#D1D5DB', fontSize: '0.85rem', margin: '4px 0 0', maxWidth: '650px' }}>
+                Download complete financial records formatted for humans in Microsoft Excel (.xls), or inspect all tables online, or download an automated machine restore file (.json).
               </p>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {/* 1. Human Readable Master Excel Workbook */}
             <button 
-              className="btn btn-primary"
-              onClick={() => handleExportDataset('all', 'json')}
-              disabled={exportingType === 'all-json'}
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontWeight: 700 }}
+              className="btn btn-emerald"
+              onClick={handleExportMasterExcel}
+              disabled={exportingType === 'master-excel'}
+              title="Download human-readable Excel workbook containing all accounts, vouchers, invoices, bills, and customers"
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontWeight: 700 }}
             >
-              <Download size={16} /> Export Full Backup (JSON)
+              <FileSpreadsheet size={16} /> Download Excel Workbook (.xls)
             </button>
 
+            {/* 2. Visual Online Table Reader */}
+            <button 
+              className="btn btn-outline"
+              onClick={() => {
+                setViewerTab('accounts');
+                setShowViewerModal(true);
+              }}
+              title="Inspect and check all data tables or backup files directly in the browser"
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'rgba(56,189,248,0.1)', borderColor: 'rgba(56,189,248,0.3)', color: '#38BDF8' }}
+            >
+              <Eye size={16} /> Inspect & Read Online
+            </button>
+
+            {/* 3. System Restore JSON */}
+            <button 
+              className="btn btn-outline"
+              onClick={() => handleExportDataset('all', 'json')}
+              disabled={exportingType === 'all-json'}
+              title="Download raw technical backup file for restoring data back into the system"
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px' }}
+            >
+              <Download size={15} /> System Backup (JSON)
+            </button>
+
+            {/* 4. Restore Backup */}
             {activeRole !== 'AUDITOR' && (
               <button 
                 className="btn btn-outline"
                 onClick={() => openImportModal('all')}
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: 'rgba(255,255,255,0.06)' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'rgba(255,255,255,0.06)' }}
               >
                 <UploadCloud size={16} /> Restore Backup File
               </button>
@@ -376,23 +516,46 @@ export const DataHubView: React.FC = () => {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      title="Download sample template"
-                      onClick={() => downloadSampleTemplate(mod.id)}
-                      style={{
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '6px',
-                        padding: '4px 8px',
-                        color: '#9CA3AF',
-                        fontSize: '0.72rem',
-                        cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', gap: '4px'
-                      }}
-                    >
-                      <Download size={12} /> Template
-                    </button>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button
+                        type="button"
+                        title="Inspect in visual table reader"
+                        onClick={() => {
+                          setViewerTab(mod.id as any);
+                          setShowViewerModal(true);
+                        }}
+                        style={{
+                          background: 'rgba(56,189,248,0.1)',
+                          border: '1px solid rgba(56,189,248,0.25)',
+                          borderRadius: '6px',
+                          padding: '4px 8px',
+                          color: '#38BDF8',
+                          fontSize: '0.72rem',
+                          cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', gap: '4px'
+                        }}
+                      >
+                        <Eye size={12} /> View
+                      </button>
+
+                      <button
+                        type="button"
+                        title="Download sample template"
+                        onClick={() => downloadSampleTemplate(mod.id)}
+                        style={{
+                          background: 'rgba(255,255,255,0.05)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: '6px',
+                          padding: '4px 8px',
+                          color: '#9CA3AF',
+                          fontSize: '0.72rem',
+                          cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', gap: '4px'
+                        }}
+                      >
+                        <Download size={12} /> Template
+                      </button>
+                    </div>
                   </div>
 
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: 0, lineHeight: 1.4 }}>
@@ -408,13 +571,25 @@ export const DataHubView: React.FC = () => {
                   paddingTop: '14px',
                   gap: '8px'
                 }}>
-                  <div style={{ display: 'flex', gap: '6px' }}>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                     <button 
                       type="button"
                       className="btn btn-outline"
-                      style={{ fontSize: '0.78rem', padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      style={{ fontSize: '0.75rem', padding: '5px 9px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      onClick={() => handleExportDataset(mod.id, 'excel')}
+                      disabled={exportingType === `${mod.id}-excel`}
+                      title="Download formatted Excel Spreadsheet"
+                    >
+                      <FileSpreadsheet size={13} color="#10B981" /> Excel
+                    </button>
+
+                    <button 
+                      type="button"
+                      className="btn btn-outline"
+                      style={{ fontSize: '0.75rem', padding: '5px 9px', display: 'flex', alignItems: 'center', gap: '4px' }}
                       onClick={() => handleExportDataset(mod.id, 'csv')}
                       disabled={exportingType === `${mod.id}-csv`}
+                      title="Download standard CSV"
                     >
                       <FileSpreadsheet size={13} color="#34d399" /> CSV
                     </button>
@@ -422,9 +597,10 @@ export const DataHubView: React.FC = () => {
                     <button 
                       type="button"
                       className="btn btn-outline"
-                      style={{ fontSize: '0.78rem', padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      style={{ fontSize: '0.75rem', padding: '5px 9px', display: 'flex', alignItems: 'center', gap: '4px' }}
                       onClick={() => handleExportDataset(mod.id, 'json')}
                       disabled={exportingType === `${mod.id}-json`}
+                      title="Download JSON format"
                     >
                       <FileCode size={13} color="#60a5fa" /> JSON
                     </button>
@@ -462,6 +638,13 @@ export const DataHubView: React.FC = () => {
           bankAccounts={bankAccounts}
         />
       )}
+
+      {/* Visual Data & Backup Reader Modal */}
+      <DataViewerModal
+        isOpen={showViewerModal}
+        onClose={() => setShowViewerModal(false)}
+        initialTab={viewerTab}
+      />
     </div>
   );
 };

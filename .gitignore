@@ -1,0 +1,31 @@
+# Node & Build artifacts
+node_modules/
+dist/
+dist-ssr/
+build/
+out/
+LedgerFlow-win32-x64/
+*.exe
+
+# Python & Django
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+*.sqlite3
+db.sqlite3
+media/
+staticfiles/
+
+# Logs & Environment
+*.log
+.env
+.env.local
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
