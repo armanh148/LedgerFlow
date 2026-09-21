@@ -1,10 +1,53 @@
 from decimal import Decimal
+from datetime import date, datetime
 from django.utils import timezone
 from django.db.models import Sum, Q
 from apps.accounts.models import Account, AccountCategory
 from apps.ledger.models import JournalItem, JournalEntryStatus
 from apps.invoicing.models import Invoice, InvoiceStatus
 from apps.payables.models import Bill, BillStatus
+
+def parse_date(d):
+    """Safely converts a string, datetime, or date into a date object."""
+    if not d:
+        return timezone.now().date()
+    if isinstance(d, datetime):
+        return d.date()
+    if isinstance(d, date):
+        return d
+    if isinstance(d, str):
+        d_str = d.strip()
+        if not d_str:
+            return timezone.now().date()
+        try:
+            return datetime.strptime(d_str, '%Y-%m-%d').date()
+        except Exception:
+            try:
+                return date.fromisoformat(d_str)
+            except Exception:
+                return timezone.now().date()
+    return timezone.now().date()
+
+def parse_optional_date(d):
+    """Safely converts an optional date input to date object or None."""
+    if not d:
+        return None
+    if isinstance(d, datetime):
+        return d.date()
+    if isinstance(d, date):
+        return d
+    if isinstance(d, str):
+        d_str = d.strip()
+        if not d_str:
+            return None
+        try:
+            return datetime.strptime(d_str, '%Y-%m-%d').date()
+        except Exception:
+            try:
+                return date.fromisoformat(d_str)
+            except Exception:
+                return None
+    return None
 
 class ReportingEngine:
     @staticmethod
@@ -13,10 +56,12 @@ class ReportingEngine:
         Calculates real-time Trial Balance.
         Lists every account, its debit and credit balances, and checks total debit == total credit.
         """
+        parsed_date = parse_date(as_of_date) if as_of_date else timezone.now().date()
         accounts = Account.objects.filter(is_active=True).order_by('code')
-        items_query = JournalItem.objects.filter(journal_entry__status=JournalEntryStatus.POSTED)
-        if as_of_date:
-            items_query = items_query.filter(journal_entry__date__lte=as_of_date)
+        items_query = JournalItem.objects.filter(
+            journal_entry__status=JournalEntryStatus.POSTED,
+            journal_entry__date__lte=parsed_date
+        )
 
         rows = []
         total_debits = Decimal('0.00')
@@ -62,7 +107,7 @@ class ReportingEngine:
         is_balanced = (total_debits == total_credits)
 
         return {
-            'as_of_date': str(as_of_date or timezone.now().date()),
+            'as_of_date': str(parsed_date),
             'accounts': rows,
             'total_debits': str(total_debits),
             'total_credits': str(total_credits),
@@ -76,18 +121,18 @@ class ReportingEngine:
         Calculates Profit & Loss (Income Statement).
         Revenues - Expenses = Net Profit.
         """
-        if not end_date:
-            end_date = timezone.now().date()
+        parsed_end_date = parse_date(end_date) if end_date else timezone.now().date()
+        parsed_start_date = parse_optional_date(start_date)
 
         items_query = JournalItem.objects.filter(
             journal_entry__status=JournalEntryStatus.POSTED,
-            journal_entry__date__lte=end_date
+            journal_entry__date__lte=parsed_end_date
         )
-        if start_date:
-            items_query = items_query.filter(journal_entry__date__gte=start_date)
+        if parsed_start_date:
+            items_query = items_query.filter(journal_entry__date__gte=parsed_start_date)
 
         # Revenue Accounts
-        revenue_accounts = Account.objects.filter(category=AccountCategory.REVENUE, is_active=True)
+        revenue_accounts = Account.objects.filter(category=AccountCategory.REVENUE, is_active=True).order_by('code')
         revenues = []
         total_revenue = Decimal('0.00')
 
@@ -106,7 +151,7 @@ class ReportingEngine:
                 total_revenue += net_rev
 
         # Expense Accounts
-        expense_accounts = Account.objects.filter(category=AccountCategory.EXPENSE, is_active=True)
+        expense_accounts = Account.objects.filter(category=AccountCategory.EXPENSE, is_active=True).order_by('code')
         expenses = []
         total_expense = Decimal('0.00')
 
@@ -127,8 +172,8 @@ class ReportingEngine:
         net_profit = total_revenue - total_expense
 
         return {
-            'start_date': str(start_date) if start_date else None,
-            'end_date': str(end_date),
+            'start_date': str(parsed_start_date) if parsed_start_date else None,
+            'end_date': str(parsed_end_date),
             'revenues': revenues,
             'total_revenue': str(total_revenue),
             'expenses': expenses,
@@ -143,17 +188,31 @@ class ReportingEngine:
         Calculates Balance Sheet as of a specific date.
         Assets = Liabilities + Equity + Retained Earnings (Net Profit).
         """
-        if not as_of_date:
-            as_of_date = timezone.now().date()
+        parsed_date = parse_date(as_of_date) if as_of_date else timezone.now().date()
 
-        pnl = ReportingEngine.get_profit_and_loss(end_date=as_of_date)
+        pnl = ReportingEngine.get_profit_and_loss(end_date=parsed_date)
         net_profit = Decimal(pnl['net_profit'])
+
+        items_query = JournalItem.objects.filter(
+            journal_entry__status=JournalEntryStatus.POSTED,
+            journal_entry__date__lte=parsed_date
+        )
+
+        def calc_account_balance(acc):
+            acc_items = items_query.filter(account=acc)
+            totals = acc_items.aggregate(sd=Sum('debit'), sc=Sum('credit'))
+            sd = totals['sd'] or Decimal('0.00')
+            sc = totals['sc'] or Decimal('0.00')
+            if acc.category in [AccountCategory.ASSET, AccountCategory.EXPENSE]:
+                return acc.opening_balance + sd - sc
+            else:
+                return acc.opening_balance + sc - sd
 
         # Asset Accounts
         assets = []
         total_assets = Decimal('0.00')
-        for acc in Account.objects.filter(category=AccountCategory.ASSET, is_active=True):
-            bal = acc.current_balance
+        for acc in Account.objects.filter(category=AccountCategory.ASSET, is_active=True).order_by('code'):
+            bal = calc_account_balance(acc)
             if bal != 0:
                 assets.append({'code': acc.code, 'name': acc.name, 'amount': str(bal)})
                 total_assets += bal
@@ -161,8 +220,8 @@ class ReportingEngine:
         # Liability Accounts
         liabilities = []
         total_liabilities = Decimal('0.00')
-        for acc in Account.objects.filter(category=AccountCategory.LIABILITY, is_active=True):
-            bal = acc.current_balance
+        for acc in Account.objects.filter(category=AccountCategory.LIABILITY, is_active=True).order_by('code'):
+            bal = calc_account_balance(acc)
             if bal != 0:
                 liabilities.append({'code': acc.code, 'name': acc.name, 'amount': str(bal)})
                 total_liabilities += bal
@@ -170,8 +229,8 @@ class ReportingEngine:
         # Equity Accounts
         equity = []
         total_equity = Decimal('0.00')
-        for acc in Account.objects.filter(category=AccountCategory.EQUITY, is_active=True):
-            bal = acc.current_balance
+        for acc in Account.objects.filter(category=AccountCategory.EQUITY, is_active=True).order_by('code'):
+            bal = calc_account_balance(acc)
             if bal != 0:
                 equity.append({'code': acc.code, 'name': acc.name, 'amount': str(bal)})
                 total_equity += bal
@@ -184,7 +243,7 @@ class ReportingEngine:
         difference = total_assets - total_liabilities_and_equity
 
         return {
-            'as_of_date': str(as_of_date),
+            'as_of_date': str(parsed_date),
             'assets': assets,
             'total_assets': str(total_assets),
             'liabilities': liabilities,
@@ -201,17 +260,16 @@ class ReportingEngine:
         """
         Calculates Accounts Receivable (AR) Aging buckets (0-30, 31-60, 61-90, 90+ days).
         """
-        if not as_of_date:
-            as_of_date = timezone.now().date()
-
+        parsed_date = parse_date(as_of_date) if as_of_date else timezone.now().date()
         open_invoices = Invoice.objects.exclude(status__in=[InvoiceStatus.PAID, InvoiceStatus.CANCELLED])
         customer_aging = {}
 
         for inv in open_invoices:
-            cust_name = inv.customer.name
+            cust_name = inv.customer.name if inv.customer else 'Unknown Customer'
+            cust_id = str(inv.customer.id) if inv.customer else 'unknown'
             if cust_name not in customer_aging:
                 customer_aging[cust_name] = {
-                    'customer_id': str(inv.customer.id),
+                    'customer_id': cust_id,
                     'customer_name': cust_name,
                     'current_0_30': Decimal('0.00'),
                     'days_31_60': Decimal('0.00'),
@@ -220,8 +278,11 @@ class ReportingEngine:
                     'total_due': Decimal('0.00'),
                 }
 
-            days_overdue = (as_of_date - inv.due_date).days
-            bal = inv.remaining_balance
+            ref_date = inv.due_date or inv.issue_date or parsed_date
+            if isinstance(ref_date, str):
+                ref_date = parse_date(ref_date)
+            days_overdue = (parsed_date - ref_date).days
+            bal = inv.remaining_balance or Decimal('0.00')
 
             if days_overdue <= 30:
                 customer_aging[cust_name]['current_0_30'] += bal
@@ -258,7 +319,7 @@ class ReportingEngine:
             })
 
         return {
-            'as_of_date': str(as_of_date),
+            'as_of_date': str(parsed_date),
             'customers': rows,
             'total_0_30': str(tot_0_30),
             'total_31_60': str(tot_31_60),
@@ -272,17 +333,16 @@ class ReportingEngine:
         """
         Calculates Accounts Payable (AP) Aging buckets for vendors.
         """
-        if not as_of_date:
-            as_of_date = timezone.now().date()
-
+        parsed_date = parse_date(as_of_date) if as_of_date else timezone.now().date()
         open_bills = Bill.objects.exclude(status__in=[BillStatus.PAID, BillStatus.CANCELLED])
         vendor_aging = {}
 
         for bill in open_bills:
-            v_name = bill.vendor.name
+            v_name = bill.vendor.name if bill.vendor else 'Unknown Vendor'
+            v_id = str(bill.vendor.id) if bill.vendor else 'unknown'
             if v_name not in vendor_aging:
                 vendor_aging[v_name] = {
-                    'vendor_id': str(bill.vendor.id),
+                    'vendor_id': v_id,
                     'vendor_name': v_name,
                     'current_0_30': Decimal('0.00'),
                     'days_31_60': Decimal('0.00'),
@@ -291,8 +351,11 @@ class ReportingEngine:
                     'total_due': Decimal('0.00'),
                 }
 
-            days_overdue = (as_of_date - bill.due_date).days
-            bal = bill.remaining_balance
+            ref_date = bill.due_date or bill.issue_date or parsed_date
+            if isinstance(ref_date, str):
+                ref_date = parse_date(ref_date)
+            days_overdue = (parsed_date - ref_date).days
+            bal = bill.remaining_balance or Decimal('0.00')
 
             if days_overdue <= 30:
                 vendor_aging[v_name]['current_0_30'] += bal
@@ -329,7 +392,7 @@ class ReportingEngine:
             })
 
         return {
-            'as_of_date': str(as_of_date),
+            'as_of_date': str(parsed_date),
             'vendors': rows,
             'total_0_30': str(tot_0_30),
             'total_31_60': str(tot_31_60),

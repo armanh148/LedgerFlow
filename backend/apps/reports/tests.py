@@ -54,6 +54,17 @@ class FinancialReportsTest(TestCase):
 
     def test_balance_sheet_equation(self):
         """Balance Sheet Assets == Liabilities + Equity + Retained Earnings."""
-        bs = ReportingEngine.get_balance_sheet()
+        bs = ReportingEngine.get_balance_sheet('2026-09-21')
         self.assertTrue(bs['is_balanced'])
         self.assertEqual(bs['difference'], '0.00')
+
+    def test_ar_and_ap_aging_with_string_date(self):
+        """AR and AP aging must run smoothly with string as_of_date."""
+        ar = ReportingEngine.get_ar_aging('2026-09-21')
+        self.assertIn('customers', ar)
+        self.assertIn('grand_total', ar)
+
+        ap = ReportingEngine.get_ap_aging('2026-09-21')
+        self.assertIn('vendors', ap)
+        self.assertIn('grand_total', ap)
+

@@ -44,8 +44,9 @@ export const ReportsView: React.FC = () => {
         const res = await api.get(`reports/ap-aging/?as_of_date=${asOfDate}`);
         setApAging(res.data);
       }
-    } catch (err) {
-      showToast('Failed to calculate financial statement', 'error');
+    } catch (err: any) {
+      console.error('Failed to load financial report', err);
+      showToast('Failed to calculate financial statement. Please check backend server status.', 'error');
     } finally {
       setLoading(false);
     }
@@ -200,14 +201,16 @@ export const ReportsView: React.FC = () => {
               <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: 0 }}>As of {asOfDate}</p>
             </div>
 
-            {trialBalance?.is_balanced ? (
-              <div className="badge badge-emerald" style={{ padding: '6px 14px', fontSize: '0.85rem' }}>
-                <CheckCircle2 size={16} /> Mathematically Balanced (Debits = Credits)
-              </div>
-            ) : (
-              <div className="badge badge-crimson" style={{ padding: '6px 14px', fontSize: '0.85rem' }}>
-                <AlertTriangle size={16} /> Discrepancy Found! Diff: {formatCurrency(trialBalance?.difference)}
-              </div>
+            {!loading && trialBalance && (
+              trialBalance.is_balanced ? (
+                <div className="badge badge-emerald" style={{ padding: '6px 14px', fontSize: '0.85rem' }}>
+                  <CheckCircle2 size={16} /> Mathematically Balanced (Debits = Credits)
+                </div>
+              ) : (
+                <div className="badge badge-crimson" style={{ padding: '6px 14px', fontSize: '0.85rem' }}>
+                  <AlertTriangle size={16} /> Discrepancy Found! Diff: {formatCurrency(trialBalance.difference)}
+                </div>
+              )
             )}
           </div>
 
@@ -316,14 +319,16 @@ export const ReportsView: React.FC = () => {
               <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: 0 }}>As of {balanceSheet?.as_of_date}</p>
             </div>
 
-            {balanceSheet?.is_balanced ? (
-              <div className="badge badge-emerald" style={{ padding: '6px 14px', fontSize: '0.85rem' }}>
-                <CheckCircle2 size={16} /> Balanced Equation (Assets = Liabilities + Equity)
-              </div>
-            ) : (
-              <div className="badge badge-crimson" style={{ padding: '6px 14px', fontSize: '0.85rem' }}>
-                <AlertTriangle size={16} /> Balance Sheet Off! Diff: {formatCurrency(balanceSheet?.difference)}
-              </div>
+            {!loading && balanceSheet && (
+              balanceSheet.is_balanced ? (
+                <div className="badge badge-emerald" style={{ padding: '6px 14px', fontSize: '0.85rem' }}>
+                  <CheckCircle2 size={16} /> Balanced Equation (Assets = Liabilities + Equity)
+                </div>
+              ) : (
+                <div className="badge badge-crimson" style={{ padding: '6px 14px', fontSize: '0.85rem' }}>
+                  <AlertTriangle size={16} /> Balance Sheet Off! Diff: {formatCurrency(balanceSheet.difference)}
+                </div>
+              )
             )}
           </div>
 
