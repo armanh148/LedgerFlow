@@ -63,12 +63,50 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ledgerflow.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+import shutil
+
+# Database configuration
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    try:
+        import dj_database_url
+        DATABASES = {
+            'default': dj_database_url.config(
+                default=DATABASE_URL,
+                conn_max_age=600,
+                conn_health_checks=True,
+            )
+        }
+    except Exception:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
+elif os.environ.get('VERCEL') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME') or os.path.exists('/var/task'):
+    # Running in Vercel / AWS Lambda serverless environment (where root filesystem is read-only)
+    tmp_db_path = Path('/tmp/db.sqlite3')
+    bundled_db_path = BASE_DIR / 'db.sqlite3'
+    if not tmp_db_path.exists() and bundled_db_path.exists():
+        try:
+            shutil.copy2(bundled_db_path, tmp_db_path)
+        except Exception:
+            pass
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': str(tmp_db_path),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = []
 
