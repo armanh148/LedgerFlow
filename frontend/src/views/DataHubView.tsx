@@ -398,27 +398,29 @@ export const DataHubView: React.FC = () => {
 
       {/* Full System Backup & Restore Hero Banner */}
       <div className="glass-panel" style={{ 
-        background: 'linear-gradient(135deg, rgba(249,115,22,0.12) 0%, rgba(30,41,59,0.8) 100%)',
-        border: '1px solid rgba(249,115,22,0.3)',
-        padding: '24px'
+        background: '#FFFFFF',
+        border: '1px solid #E2E8F0',
+        borderRadius: '12px',
+        padding: '24px',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{
               width: '52px', height: '52px',
               borderRadius: '14px',
-              background: 'linear-gradient(135deg, #F97316, #EA580C)',
+              background: '#F97316',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 8px 20px rgba(249,115,22,0.4)',
+              boxShadow: '0 4px 12px rgba(249,115,22,0.25)',
               flexShrink: 0
             }}>
               <HardDrive size={26} color="#FFFFFF" />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: '#FFFFFF' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: '#0F172A' }}>
                 Financial Data Export & Disaster Recovery
               </h3>
-              <p style={{ color: '#D1D5DB', fontSize: '0.85rem', margin: '4px 0 0', maxWidth: '650px' }}>
+              <p style={{ color: '#475569', fontSize: '0.85rem', margin: '4px 0 0', maxWidth: '650px', lineHeight: '1.45' }}>
                 Download complete financial records formatted for humans in Microsoft Excel (.xls), or inspect all tables online, or download an automated machine restore file (.json).
               </p>
             </div>
@@ -444,7 +446,7 @@ export const DataHubView: React.FC = () => {
                 setShowViewerModal(true);
               }}
               title="Inspect and check all data tables or backup files directly in the browser"
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'rgba(56,189,248,0.1)', borderColor: 'rgba(56,189,248,0.3)', color: '#38BDF8' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: '#F0F9FF', borderColor: '#BAE6FD', color: '#0284C7', fontWeight: 600 }}
             >
               <Eye size={16} /> Inspect & Read Online
             </button>
@@ -455,7 +457,7 @@ export const DataHubView: React.FC = () => {
               onClick={() => handleExportDataset('all', 'json')}
               disabled={exportingType === 'all-json'}
               title="Download raw technical backup file for restoring data back into the system"
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: '#FFFFFF', borderColor: '#CBD5E1', color: '#334155', fontWeight: 600 }}
             >
               <Download size={15} /> System Backup (JSON)
             </button>
@@ -465,7 +467,7 @@ export const DataHubView: React.FC = () => {
               <button 
                 className="btn btn-outline"
                 onClick={() => openImportModal('all')}
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'rgba(255,255,255,0.06)' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: '#F8FAFC', borderColor: '#CBD5E1', color: '#334155', fontWeight: 600 }}
               >
                 <UploadCloud size={16} /> Restore Backup File
               </button>
