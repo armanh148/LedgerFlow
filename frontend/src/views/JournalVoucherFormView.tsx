@@ -365,12 +365,12 @@ export const JournalVoucherFormView: React.FC = () => {
         </div>
 
         {/* Form Controls & Real-Time Balance Display */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
           <button className="btn btn-outline" onClick={addRow}>
             <Plus size={16} /> Add Line Row (Alt+N)
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', gap: '16px', fontSize: '0.9rem', background: '#1e293b', padding: '10px 18px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
               <div>
                 <span style={{ color: 'var(--text-muted)' }}>Total Debit: </span>
@@ -410,6 +410,7 @@ export const JournalVoucherFormView: React.FC = () => {
             )}
           </div>
         </div>
+
       </div>
 
       {/* Journal Entry Records Data Grid */}

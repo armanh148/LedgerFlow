@@ -464,6 +464,26 @@ table.data-table tbody tr:hover td { background: #FFFBF7; }
   }
 }
 
+/* Two-row navbar title on mobile */
+/* Desktop: show title inline, hide the bottom row */
+.navbar-title-row {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* Hide the inline title inside Row 1 on mobile */
+  .navbar-title-inline {
+    display: none;
+  }
+
+  /* Show the dedicated title row below the icon row */
+  .navbar-title-row {
+    display: block;
+    padding: 8px 0 10px;
+    border-top: 1px solid #F3F4F6;
+  }
+}
+
 /* ───────────────── Dashboard Responsive ───────────────── */
 @media (max-width: 900px) {
   .dashboard-middle-grid {

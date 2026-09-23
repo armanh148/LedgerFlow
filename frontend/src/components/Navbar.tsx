@@ -14,6 +14,9 @@ export const Navbar: React.FC = () => {
   const { activeRole, setActiveRole, activeTab, setActiveTab, setShowHotkeysModal, sidebarOpen, toggleSidebar, showToast } = useAuth();
   const { currency, setCurrency, currencyConfig, currencies } = useCurrency();
 
+  // Refs for portal positioning
+  const bellRef = React.useRef<HTMLButtonElement>(null);
+
   // Search Modal State
   const [showSearchModal, setShowSearchModal] = useState<boolean>(false);
 
@@ -114,42 +117,48 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header style={{
-      height: '68px',
+    <header className="navbar-header" style={{
       background: '#FFFFFF',
       borderBottom: '1px solid #E5E7EB',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '0 16px',
       boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
       position: 'relative',
       flexShrink: 0,
+      padding: '0 16px',
     }}>
 
-      {/* Left: sidebar toggle + page title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-        {!sidebarOpen && (
-          <button
-            id="sidebar-open-btn"
-            onClick={toggleSidebar}
-            title="Open sidebar"
-            className="btn btn-outline"
-            style={{ padding: '8px', borderRadius: '10px', width: '38px', height: '38px' }}
-          >
-            <PanelLeftOpen size={18} style={{ color: '#6B7280' }} />
-          </button>
-        )}
+      {/* Row 1: sidebar toggle (left) + right controls */}
+      <div style={{
+        height: '68px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
 
-        <div>
-          <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#111827', lineHeight: 1.2 }}>
-            {getTabTitle()}
-          </div>
-          <div style={{ fontSize: '0.72rem', color: '#9CA3AF', fontWeight: 500 }}>
-            LedgerFlow Enterprise
+        {/* Left: sidebar toggle + title (desktop only inline) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          {!sidebarOpen && (
+            <button
+              id="sidebar-open-btn"
+              onClick={toggleSidebar}
+              title="Open sidebar"
+              className="btn btn-outline"
+              style={{ padding: '8px', borderRadius: '10px', width: '38px', height: '38px' }}
+            >
+              <PanelLeftOpen size={18} style={{ color: '#6B7280' }} />
+            </button>
+          )}
+
+          {/* Title – visible inline on desktop, hidden here on mobile */}
+          <div className="navbar-title-inline">
+            <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#111827', lineHeight: 1.2 }}>
+              {getTabTitle()}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: '#9CA3AF', fontWeight: 500 }}>
+              LedgerFlow Enterprise
+            </div>
           </div>
         </div>
-      </div>
+
 
       {/* Right Controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -199,6 +208,7 @@ export const Navbar: React.FC = () => {
         {/* 2. Functional Notifications Bell */}
         <div style={{ position: 'relative' }}>
           <button
+            ref={bellRef}
             className="btn btn-outline"
             onClick={() => setShowNotifications(prev => !prev)}
             title="Compliance & Audit Notifications"
@@ -232,6 +242,7 @@ export const Navbar: React.FC = () => {
             onMarkAllRead={handleMarkAllRead}
             onClearAll={handleClearAllNotifications}
             onItemClick={handleNotificationClick}
+            triggerRef={bellRef}
           />
         </div>
 
@@ -358,6 +369,8 @@ export const Navbar: React.FC = () => {
         </div>
       </div>
 
+      </div>
+
       {/* Global Search Modal (Search... ⌘F) */}
       <GlobalSearchModal
         isOpen={showSearchModal}
@@ -369,6 +382,17 @@ export const Navbar: React.FC = () => {
         isOpen={showMessages}
         onClose={() => setShowMessages(false)}
       />
+
+      {/* Row 2: Page title – only visible on mobile */}
+      <div className="navbar-title-row">
+        <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#111827', lineHeight: 1.2 }}>
+          {getTabTitle()}
+        </div>
+        <div style={{ fontSize: '0.72rem', color: '#9CA3AF', fontWeight: 500 }}>
+          LedgerFlow Enterprise
+        </div>
+      </div>
+
     </header>
   );
 };
