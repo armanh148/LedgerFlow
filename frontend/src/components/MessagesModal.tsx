@@ -135,14 +135,14 @@ export const MessagesModal: React.FC<MessagesModalProps> = ({ isOpen, onClose })
       >
         {/* Header */}
         <div style={{
-          padding: '14px 18px',
+          padding: '16px 18px',
           borderBottom: '1px solid rgba(255,255,255,0.08)',
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           background: 'rgba(255,255,255,0.02)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
             <div style={{
               width: '36px', height: '36px',
               borderRadius: '10px',
@@ -156,7 +156,7 @@ export const MessagesModal: React.FC<MessagesModalProps> = ({ isOpen, onClose })
               <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#fff' }}>
                 Team Collaboration & AI Assistant
               </h3>
-              <span style={{ fontSize: '0.72rem', color: '#10B981', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ fontSize: '0.72rem', color: '#10B981', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px' }}>
                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981' }} /> Online · Financial Audit Stream
               </span>
             </div>

@@ -412,7 +412,21 @@ export const BillsView: React.FC = () => {
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span className={`badge ${opt.badge}`} style={{ fontSize: '0.7rem', padding: '2px 6px' }}>
+                            <span
+                              style={{
+                                fontSize: '0.7rem',
+                                padding: '2px 8px',
+                                borderRadius: '6px',
+                                background: '#FFFFFF',
+                                color: '#F97316',
+                                fontWeight: 700,
+                                letterSpacing: '0.02em',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                            >
                               {opt.id === 'ALL' ? 'All' : opt.id.replace('_', ' ')}
                             </span>
                             <span>{opt.label}</span>
