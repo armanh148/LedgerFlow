@@ -126,10 +126,10 @@ export const DashboardView: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Top Header & Quick Actions Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Quick Actions</h2>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div className="dashboard-actions" style={{ display: 'flex', gap: '10px' }}>
           <button className="btn btn-primary" onClick={() => setActiveTab('voucher')}>
             <ArrowDownCircle size={16} /> Deposit / New Voucher
           </button>
@@ -200,7 +200,7 @@ export const DashboardView: React.FC = () => {
       </div>
 
       {/* Middle Section: Ledger Balance Chart + Currency Convert Widget */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
+      <div className="dashboard-middle-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
         {/* Left Column: Ledger Balance Chart */}
         <div className="glass-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>

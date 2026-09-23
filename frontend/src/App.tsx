@@ -31,7 +31,7 @@ const Toast: React.FC = () => {
 };
 
 const MainContent: React.FC = () => {
-  const { activeTab } = useAuth();
+  const { activeTab, sidebarOpen, toggleSidebar } = useAuth();
 
   const renderActiveView = () => {
     switch (activeTab) {
@@ -49,7 +49,9 @@ const MainContent: React.FC = () => {
   };
 
   return (
-    <div className="app-container">
+    <div className={`app-container${sidebarOpen ? ' sidebar-mobile-open' : ''}`}>
+      {/* Mobile overlay backdrop – clicking it closes the sidebar */}
+      <div className="sidebar-overlay" onClick={toggleSidebar} />
       <Sidebar />
       <div className="main-content">
         <Navbar />

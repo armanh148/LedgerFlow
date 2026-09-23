@@ -268,7 +268,7 @@ export const ReportsView: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className="two-col-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             {/* Revenues */}
             <div style={{ background: '#1e293b', padding: '18px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
               <h4 style={{ color: '#34d399', fontSize: '1rem', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
@@ -332,7 +332,7 @@ export const ReportsView: React.FC = () => {
             )}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className="two-col-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             {/* Assets */}
             <div style={{ background: '#1e293b', padding: '18px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
               <h4 style={{ color: '#60a5fa', fontSize: '1rem', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>

@@ -33,15 +33,22 @@ export const Sidebar: React.FC = () => {
     { id: 'audit',    label: 'Audit & Security',  icon: ShieldCheck },
   ];
 
-  if (!sidebarOpen) return null;
+  const isMobileView = window.innerWidth <= 768;
+  // On desktop: fully hide when closed. On mobile: always render (CSS slides it in/out)
+  if (!sidebarOpen && !isMobileView) return null;
+
 
   const MenuItem = ({ item }: { item: { id: string; label: string; icon: any } }) => {
     const Icon = item.icon;
     const isActive = activeTab === item.id;
+    const isMobile = window.innerWidth <= 768;
     return (
       <button
         key={item.id}
-        onClick={() => setActiveTab(item.id)}
+        onClick={() => {
+          setActiveTab(item.id);
+          if (isMobile) toggleSidebar(); // close drawer after nav on mobile
+        }}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -99,7 +106,7 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside style={{
+    <aside className="sidebar-drawer" style={{
       width: '248px',
       background: '#111827',
       borderRight: '1px solid rgba(255,255,255,0.06)',

@@ -121,9 +121,10 @@ export const Navbar: React.FC = () => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 28px',
+      padding: '0 16px',
       boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-      position: 'relative'
+      position: 'relative',
+      flexShrink: 0,
     }}>
 
       {/* Left: sidebar toggle + page title */}
@@ -153,9 +154,10 @@ export const Navbar: React.FC = () => {
       {/* Right Controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
 
-        {/* 1. Functional Search Bar */}
+        {/* 1. Functional Search Bar – hidden on mobile */}
         <div 
           onClick={() => setShowSearchModal(true)}
+          className="navbar-search"
           style={{
             position: 'relative',
             display: 'flex',
@@ -265,12 +267,13 @@ export const Navbar: React.FC = () => {
           <span style={{ color: '#374151' }}>Hotkeys</span>
         </button>
 
-        {/* Divider */}
-        <div style={{ width: '1px', height: '28px', background: '#E5E7EB' }} />
+        {/* Divider – hidden on mobile */}
+        <div className="navbar-divider" style={{ width: '1px', height: '28px', background: '#E5E7EB' }} />
 
-        {/* Currency Selector */}
+        {/* Currency Selector – hidden on small mobile */}
         <div
           title="Switch Active Currency"
+          className="navbar-currency"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -310,8 +313,8 @@ export const Navbar: React.FC = () => {
           </select>
         </div>
 
-        {/* Role Selector */}
-        <div style={{
+        {/* Role Selector – hidden on small mobile */}
+        <div className="navbar-role" style={{
           display: 'flex', alignItems: 'center', gap: '8px',
           background: '#FFF4ED',
           padding: '6px 12px',
