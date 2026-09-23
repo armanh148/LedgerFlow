@@ -373,13 +373,13 @@ export const DataHubView: React.FC = () => {
       {/* Top Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
             <h2 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>Data Import & Export Center</h2>
-            <span className="badge badge-orange" style={{ padding: '4px 10px', fontSize: '0.8rem' }}>
+            <span className="badge badge-orange" style={{ padding: '4px 10px', fontSize: '0.8rem', width: 'fit-content' }}>
               <ArrowUpDown size={12} /> Real-time Sync & Backup
             </span>
           </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: '4px 0 0' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: '6px 0 0' }}>
             Seamlessly import, export, and backup financial data in Excel-ready CSV or structured JSON format.
           </p>
         </div>
