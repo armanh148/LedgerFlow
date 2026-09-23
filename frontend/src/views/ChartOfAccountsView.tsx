@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { api } from '../api/client';
 import type { Account, AccountCategory } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
-import { Plus, Search, X, UploadCloud, FileSpreadsheet, FileCode } from 'lucide-react';
+import { Plus, Search, X, UploadCloud, FileSpreadsheet, FileCode, Filter, ChevronDown, Check } from 'lucide-react';
 import { exportToCSV, exportToJSON } from '../utils/exportImportUtils';
 import { ImportModal } from '../components/ImportModal';
 
@@ -16,6 +16,8 @@ export const ChartOfAccountsView: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
+  const [showFilterMenu, setShowFilterMenu] = useState<boolean>(false);
+  const filterRef = useRef<HTMLDivElement>(null);
 
   // New Account Form
   const [code, setCode] = useState<string>('');
@@ -80,7 +82,31 @@ export const ChartOfAccountsView: React.FC = () => {
     }
   };
 
-  const categories = ['ALL', 'ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'];
+  const categoryOptions = [
+    { id: 'ALL', label: 'All Categories', badge: 'badge-blue', range: 'All' },
+    { id: 'ASSET', label: 'Assets', badge: 'badge-emerald', range: '1000s' },
+    { id: 'LIABILITY', label: 'Liabilities', badge: 'badge-crimson', range: '2000s' },
+    { id: 'EQUITY', label: 'Equity', badge: 'badge-purple', range: '3000s' },
+    { id: 'REVENUE', label: 'Revenue', badge: 'badge-blue', range: '4000s' },
+    { id: 'EXPENSE', label: 'Expenses', badge: 'badge-amber', range: '5000s' },
+  ];
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      ALL: accounts.length,
+      ASSET: 0,
+      LIABILITY: 0,
+      EQUITY: 0,
+      REVENUE: 0,
+      EXPENSE: 0,
+    };
+    accounts.forEach(acc => {
+      if (counts[acc.category] !== undefined) {
+        counts[acc.category]++;
+      }
+    });
+    return counts;
+  }, [accounts]);
 
   const filteredAccounts = accounts.filter(acc => {
     const matchesCat = selectedCategory === 'ALL' || acc.category === selectedCategory;
@@ -151,25 +177,145 @@ export const ChartOfAccountsView: React.FC = () => {
       {/* Category Tabs & Search Bar */}
       <div className="glass-panel" style={{ padding: '16px 20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {categories.map(cat => (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            {/* ALL Quick Button */}
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('ALL')}
+              style={{
+                padding: '8px 18px',
+                borderRadius: '8px',
+                border: '1px solid var(--border-color)',
+                background: selectedCategory === 'ALL' ? 'var(--primary)' : '#1e293b',
+                color: '#fff',
+                fontWeight: selectedCategory === 'ALL' ? 700 : 500,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              ALL
+            </button>
+
+            {/* Category Filter Dropdown with All Links */}
+            <div style={{ position: 'relative' }} ref={filterRef}>
               <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
+                type="button"
+                onClick={() => setShowFilterMenu(!showFilterMenu)}
                 style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
                   padding: '8px 16px',
                   borderRadius: '8px',
                   border: '1px solid var(--border-color)',
-                  background: selectedCategory === cat ? 'var(--primary)' : '#1e293b',
+                  background: selectedCategory !== 'ALL' ? 'var(--primary)' : '#1e293b',
                   color: '#fff',
-                  fontWeight: selectedCategory === cat ? 600 : 500,
+                  fontWeight: selectedCategory !== 'ALL' ? 700 : 500,
                   fontSize: '0.85rem',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
                 }}
               >
-                {cat}
+                <Filter size={15} />
+                <span>
+                  {selectedCategory === 'ALL' 
+                    ? 'Filter Category' 
+                    : `Category: ${selectedCategory}`}
+                </span>
+                <ChevronDown
+                  size={14}
+                  style={{
+                    transform: showFilterMenu ? 'rotate(180deg)' : 'none',
+                    transition: 'transform 0.2s ease'
+                  }}
+                />
               </button>
-            ))}
+
+              {showFilterMenu && (
+                <>
+                  <div
+                    style={{ position: 'fixed', inset: 0, zIndex: 90 }}
+                    onClick={() => setShowFilterMenu(false)}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 8px)',
+                      left: 0,
+                      zIndex: 95,
+                      minWidth: '240px',
+                      background: '#0f172a',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: '12px',
+                      boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+                      padding: '8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px'
+                    }}
+                  >
+                    <div style={{
+                      padding: '6px 10px',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      color: 'var(--text-muted)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      All Category Filters
+                    </div>
+
+                    {categoryOptions.map(opt => {
+                      const isSelected = selectedCategory === opt.id;
+                      const count = categoryCounts[opt.id] ?? 0;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedCategory(opt.id);
+                            setShowFilterMenu(false);
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            background: isSelected ? 'rgba(249, 115, 22, 0.15)' : 'transparent',
+                            color: isSelected ? 'var(--primary)' : '#e2e8f0',
+                            fontSize: '0.85rem',
+                            fontWeight: isSelected ? 600 : 500,
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            transition: 'background 0.15s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent';
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span className={`badge ${opt.badge}`} style={{ fontSize: '0.7rem', padding: '2px 6px' }}>
+                              {opt.range}
+                            </span>
+                            <span>{opt.label}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>({count})</span>
+                            {isSelected && <Check size={14} color="var(--primary)" />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           <div style={{ position: 'relative', width: '280px' }}>

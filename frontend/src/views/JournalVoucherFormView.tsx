@@ -415,9 +415,9 @@ export const JournalVoucherFormView: React.FC = () => {
 
       {/* Journal Entry Records Data Grid */}
       <div className="glass-panel">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
           <h3 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0 }}>General Ledger Audit Entries</h3>
-          <div style={{ position: 'relative', width: '280px' }}>
+          <div style={{ position: 'relative', width: '100%', maxWidth: '320px' }}>
             <Search size={16} style={{ position: 'absolute', left: '12px', top: '10px', color: 'var(--text-dim)' }} />
             <input
               className="form-input"

@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { api } from '../api/client';
 import type { Invoice, Customer, InvoiceStatus } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
-import { Plus, Search, FileText, Send, DollarSign, Download, X, QrCode, UploadCloud, FileSpreadsheet, FileCode } from 'lucide-react';
+import { Plus, Search, FileText, Send, DollarSign, Download, X, QrCode, UploadCloud, FileSpreadsheet, FileCode, Filter, ChevronDown, Check } from 'lucide-react';
 import { exportToCSV, exportToJSON } from '../utils/exportImportUtils';
 import { ImportModal } from '../components/ImportModal';
 import jsPDF from 'jspdf';
@@ -23,6 +23,8 @@ export const InvoicesView: React.FC = () => {
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
   const [showPdfModal, setShowPdfModal] = useState<boolean>(false);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
+  const [showFilterMenu, setShowFilterMenu] = useState<boolean>(false);
+  const filterRef = useRef<HTMLDivElement>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
 
   // New Invoice Form
@@ -239,6 +241,32 @@ export const InvoicesView: React.FC = () => {
     showToast(`Exported ${filteredInvoices.length} invoices to JSON`, 'success');
   };
 
+  const statusOptions = [
+    { id: 'ALL', label: 'All Invoices', badge: 'badge-blue' },
+    { id: 'DRAFT', label: 'Draft', badge: 'badge-amber' },
+    { id: 'SENT', label: 'Sent', badge: 'badge-blue' },
+    { id: 'PARTIALLY_PAID', label: 'Partially Paid', badge: 'badge-purple' },
+    { id: 'PAID', label: 'Paid', badge: 'badge-emerald' },
+    { id: 'OVERDUE', label: 'Overdue', badge: 'badge-crimson' },
+  ];
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      ALL: invoices.length,
+      DRAFT: 0,
+      SENT: 0,
+      PARTIALLY_PAID: 0,
+      PAID: 0,
+      OVERDUE: 0,
+    };
+    invoices.forEach(inv => {
+      if (counts[inv.status] !== undefined) {
+        counts[inv.status]++;
+      }
+    });
+    return counts;
+  }, [invoices]);
+
   const filteredInvoices = invoices.filter(inv => {
     const matchesStatus = statusFilter === 'ALL' || inv.status === statusFilter;
     const matchesSearch = inv.invoice_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -297,25 +325,145 @@ export const InvoicesView: React.FC = () => {
       {/* Status Filter Tabs & Search */}
       <div className="glass-panel" style={{ padding: '16px 20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {['ALL', 'DRAFT', 'SENT', 'PARTIALLY_PAID', 'PAID', 'OVERDUE'].map(st => (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            {/* ALL Quick Button */}
+            <button
+              type="button"
+              onClick={() => setStatusFilter('ALL')}
+              style={{
+                padding: '8px 18px',
+                borderRadius: '8px',
+                border: '1px solid var(--border-color)',
+                background: statusFilter === 'ALL' ? 'var(--primary)' : '#1e293b',
+                color: '#fff',
+                fontWeight: statusFilter === 'ALL' ? 700 : 500,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              ALL
+            </button>
+
+            {/* Status Filter Dropdown with All Links */}
+            <div style={{ position: 'relative' }} ref={filterRef}>
               <button
-                key={st}
-                onClick={() => setStatusFilter(st)}
+                type="button"
+                onClick={() => setShowFilterMenu(!showFilterMenu)}
                 style={{
-                  padding: '8px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 16px',
                   borderRadius: '8px',
                   border: '1px solid var(--border-color)',
-                  background: statusFilter === st ? 'var(--primary)' : '#1e293b',
+                  background: statusFilter !== 'ALL' ? 'var(--primary)' : '#1e293b',
                   color: '#fff',
-                  fontWeight: statusFilter === st ? 600 : 500,
-                  fontSize: '0.82rem',
-                  cursor: 'pointer'
+                  fontWeight: statusFilter !== 'ALL' ? 700 : 500,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
                 }}
               >
-                {st}
+                <Filter size={15} />
+                <span>
+                  {statusFilter === 'ALL'
+                    ? 'Filter Status'
+                    : `Status: ${statusFilter.replace('_', ' ')}`}
+                </span>
+                <ChevronDown
+                  size={14}
+                  style={{
+                    transform: showFilterMenu ? 'rotate(180deg)' : 'none',
+                    transition: 'transform 0.2s ease'
+                  }}
+                />
               </button>
-            ))}
+
+              {showFilterMenu && (
+                <>
+                  <div
+                    style={{ position: 'fixed', inset: 0, zIndex: 90 }}
+                    onClick={() => setShowFilterMenu(false)}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 8px)',
+                      left: 0,
+                      zIndex: 95,
+                      minWidth: '220px',
+                      background: '#0f172a',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: '12px',
+                      boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+                      padding: '8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px'
+                    }}
+                  >
+                    <div style={{
+                      padding: '6px 10px',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      color: 'var(--text-muted)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      All Status Filters
+                    </div>
+
+                    {statusOptions.map(opt => {
+                      const isSelected = statusFilter === opt.id;
+                      const count = statusCounts[opt.id] ?? 0;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            setStatusFilter(opt.id);
+                            setShowFilterMenu(false);
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            background: isSelected ? 'rgba(249, 115, 22, 0.15)' : 'transparent',
+                            color: isSelected ? 'var(--primary)' : '#e2e8f0',
+                            fontSize: '0.85rem',
+                            fontWeight: isSelected ? 600 : 500,
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            transition: 'background 0.15s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent';
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span className={`badge ${opt.badge}`} style={{ fontSize: '0.7rem', padding: '2px 6px' }}>
+                              {opt.id === 'ALL' ? 'All' : opt.id.replace('_', ' ')}
+                            </span>
+                            <span>{opt.label}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>({count})</span>
+                            {isSelected && <Check size={14} color="var(--primary)" />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           <div style={{ position: 'relative', width: '280px' }}>
