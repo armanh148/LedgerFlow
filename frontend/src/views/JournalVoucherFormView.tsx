@@ -58,6 +58,7 @@ const AccountSelectCell: React.FC<AccountSelectCellProps> = ({ value, accounts, 
         type="button"
         onClick={toggleOpen}
         className="form-input font-mono"
+        title={selectedAccount ? `${selectedAccount.code} | ${selectedAccount.name} (${selectedAccount.category})` : 'Select Account'}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -70,10 +71,11 @@ const AccountSelectCell: React.FC<AccountSelectCellProps> = ({ value, accounts, 
           borderColor: isOpen ? 'var(--primary)' : '#E5E7EB',
           boxShadow: isOpen ? '0 0 0 3px rgba(249, 115, 22, 0.15)' : 'none',
           color: selectedAccount ? '#111827' : '#9CA3AF',
+          fontWeight: selectedAccount ? 700 : 500,
         }}
       >
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '6px' }}>
-          {selectedAccount ? `${selectedAccount.code} | ${selectedAccount.name}` : '-- Select Account --'}
+          {selectedAccount ? selectedAccount.code : '--'}
         </span>
         <ChevronDown
           size={14}
