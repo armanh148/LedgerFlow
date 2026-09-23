@@ -169,8 +169,8 @@ export const Sidebar: React.FC = () => {
       {/* Divider */}
       <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '0 4px 8px' }} />
 
-      {/* Main Menu */}
-      <div>
+      {/* Main Menu (Hidden on mobile via CSS because these 4 links appear in the mobile bottom footer) */}
+      <div className="sidebar-main-menu">
         <div style={{
           fontSize: '0.68rem', fontWeight: 700, color: '#4B5563',
           padding: '0 12px 8px',
@@ -181,10 +181,9 @@ export const Sidebar: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {mainMenu.map(item => <MenuItem key={item.id} item={item} />)}
         </div>
+        {/* Divider */}
+        <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '12px 4px 4px' }} />
       </div>
-
-      {/* Divider */}
-      <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '4px' }} />
 
       {/* Management Menu */}
       <div>

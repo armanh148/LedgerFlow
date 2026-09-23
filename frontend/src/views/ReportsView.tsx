@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { api } from '../api/client';
 import type { TrialBalanceReport, ProfitAndLossReport, BalanceSheetReport } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
-import { CheckCircle2, AlertTriangle, Printer, Calendar, FileSpreadsheet, FileCode } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Printer, Calendar, FileSpreadsheet, FileCode, Filter, ChevronDown, Check } from 'lucide-react';
 import { exportToCSV, exportToJSON } from '../utils/exportImportUtils';
 
 export const ReportsView: React.FC = () => {
@@ -18,8 +18,20 @@ export const ReportsView: React.FC = () => {
   const [arAging, setArAging] = useState<any | null>(null);
   const [apAging, setApAging] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [showFilterMenu, setShowFilterMenu] = useState<boolean>(false);
+  const filterRef = useRef<HTMLDivElement>(null);
 
   const [asOfDate, setAsOfDate] = useState<string>(new Date().toISOString().split('T')[0]);
+
+  const reportOptions = [
+    { id: 'trial', label: 'Trial Balance', badge: 'badge-blue', desc: 'Debits & credits live balance verification' },
+    { id: 'pnl', label: 'Profit & Loss (Income Statement)', badge: 'badge-emerald', desc: 'Revenues, operating expenses & net profit' },
+    { id: 'bs', label: 'Balance Sheet', badge: 'badge-purple', desc: 'Assets = liabilities + equity statement' },
+    { id: 'ar_aging', label: 'AR Aging Report', badge: 'badge-amber', desc: 'Receivables categorized by aging buckets' },
+    { id: 'ap_aging', label: 'AP Aging Report', badge: 'badge-crimson', desc: 'Payables categorized by aging buckets' },
+  ];
+
+  const currentReport = reportOptions.find(r => r.id === activeReportTab) || reportOptions[0];
 
   useEffect(() => {
     fetchReport();
@@ -151,31 +163,121 @@ export const ReportsView: React.FC = () => {
       {/* Report Selector Tabs & As-Of Date Picker */}
       <div className="glass-panel" style={{ padding: '16px 20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {[
-              { id: 'trial', label: 'Trial Balance' },
-              { id: 'pnl', label: 'Profit & Loss (Income Statement)' },
-              { id: 'bs', label: 'Balance Sheet' },
-              { id: 'ar_aging', label: 'AR Aging Report' },
-              { id: 'ap_aging', label: 'AP Aging Report' },
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveReportTab(tab.id as any)}
+          {/* Reports Filter Dropdown with all buttons inside */}
+          <div style={{ position: 'relative' }} ref={filterRef}>
+            <button
+              type="button"
+              onClick={() => setShowFilterMenu(!showFilterMenu)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '9px 18px',
+                borderRadius: '8px',
+                border: '1px solid var(--border-color)',
+                background: 'var(--primary)',
+                color: '#fff',
+                fontWeight: 600,
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Filter size={16} />
+              <span>Report: <strong>{currentReport.label}</strong></span>
+              <ChevronDown
+                size={15}
                 style={{
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  border: '1px solid var(--border-color)',
-                  background: activeReportTab === tab.id ? 'var(--primary)' : '#1e293b',
-                  color: '#fff',
-                  fontWeight: activeReportTab === tab.id ? 600 : 500,
-                  fontSize: '0.85rem',
-                  cursor: 'pointer'
+                  transform: showFilterMenu ? 'rotate(180deg)' : 'none',
+                  transition: 'transform 0.2s ease'
                 }}
-              >
-                {tab.label}
-              </button>
-            ))}
+              />
+            </button>
+
+            {showFilterMenu && (
+              <>
+                <div
+                  style={{ position: 'fixed', inset: 0, zIndex: 90 }}
+                  onClick={() => setShowFilterMenu(false)}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 8px)',
+                    left: 0,
+                    zIndex: 95,
+                    minWidth: '320px',
+                    background: '#0f172a',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    borderRadius: '12px',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+                    padding: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px'
+                  }}
+                >
+                  <div style={{
+                    padding: '6px 10px',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    color: 'var(--text-muted)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    Select Report
+                  </div>
+
+                  {reportOptions.map(opt => {
+                    const isSelected = activeReportTab === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => {
+                          setActiveReportTab(opt.id as any);
+                          setShowFilterMenu(false);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: isSelected ? 'rgba(249, 115, 22, 0.15)' : 'transparent',
+                          color: isSelected ? 'var(--primary)' : '#e2e8f0',
+                          fontSize: '0.85rem',
+                          fontWeight: isSelected ? 600 : 500,
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          transition: 'background 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent';
+                        }}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span className={`badge ${opt.badge}`} style={{ fontSize: '0.68rem', padding: '2px 6px' }}>
+                              {opt.id.toUpperCase()}
+                            </span>
+                            <span>{opt.label}</span>
+                          </div>
+                          <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', paddingLeft: '2px' }}>
+                            {opt.desc}
+                          </span>
+                        </div>
+                        {isSelected && <Check size={16} color="var(--primary)" style={{ flexShrink: 0, marginLeft: '8px' }} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -195,10 +297,10 @@ export const ReportsView: React.FC = () => {
       {/* Report 1: Trial Balance */}
       {activeReportTab === 'trial' && (
         <div className="glass-panel">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '10px', marginBottom: '20px' }}>
             <div>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>Trial Balance Statement</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: 0 }}>As of {asOfDate}</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: '2px 0 0' }}>As of {asOfDate}</p>
             </div>
 
             {!loading && trialBalance && (
@@ -257,13 +359,13 @@ export const ReportsView: React.FC = () => {
       {/* Report 2: Profit and Loss */}
       {activeReportTab === 'pnl' && (
         <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
             <div>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>Profit & Loss Statement (Income Statement)</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: 0 }}>Period Ending {pnl?.end_date}</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: '2px 0 0' }}>Period Ending {pnl?.end_date}</p>
             </div>
 
-            <div className={`badge ${pnl?.is_profitable ? 'badge-emerald' : 'badge-crimson'}`} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>
+            <div className={`badge ${pnl?.is_profitable ? 'badge-emerald' : 'badge-crimson'}`} style={{ padding: '6px 14px', fontSize: '0.85rem' }}>
               Net Profit: {formatCurrency(pnl?.net_profit || '0')}
             </div>
           </div>
@@ -313,10 +415,10 @@ export const ReportsView: React.FC = () => {
       {/* Report 3: Balance Sheet */}
       {activeReportTab === 'bs' && (
         <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
             <div>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>Balance Sheet Statement</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: 0 }}>As of {balanceSheet?.as_of_date}</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: '2px 0 0' }}>As of {balanceSheet?.as_of_date}</p>
             </div>
 
             {!loading && balanceSheet && (

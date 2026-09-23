@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { CurrencyProvider } from './context/CurrencyContext';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { HotkeysModal } from './components/HotkeysModal';
 import { DashboardView } from './views/DashboardView';
 import { ChartOfAccountsView } from './views/ChartOfAccountsView';
@@ -59,6 +60,7 @@ const MainContent: React.FC = () => {
           {renderActiveView()}
         </main>
       </div>
+      <MobileBottomNav />
       <HotkeysModal />
       <Toast />
     </div>

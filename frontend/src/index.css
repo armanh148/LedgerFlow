@@ -116,10 +116,38 @@ body {
   }
 }
 
+/* Mobile bottom navigation bar (Footer navigation on mobile) */
+.mobile-bottom-nav {
+  display: none;
+}
+
 /* Mobile (≤768px) */
 @media (max-width: 768px) {
   .content-body {
     padding: 16px;
+    padding-bottom: 76px !important; /* Ensure content is not obscured by bottom nav */
+  }
+
+  /* Hide the 4 main menu items from the sidebar drawer on mobile */
+  .sidebar-main-menu {
+    display: none !important;
+  }
+
+  /* Show fixed bottom navigation bar on mobile */
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: #111827;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 38;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 4px;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.45);
   }
 
   /* Sidebar becomes a fixed overlay on mobile */
@@ -147,6 +175,7 @@ body {
 @media (max-width: 480px) {
   .content-body {
     padding: 12px;
+    padding-bottom: 76px !important;
   }
 }
 
