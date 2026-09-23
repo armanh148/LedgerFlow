@@ -404,8 +404,8 @@ export const DataHubView: React.FC = () => {
         padding: '24px',
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '14px' }}>
             <div style={{
               width: '52px', height: '52px',
               borderRadius: '14px',
