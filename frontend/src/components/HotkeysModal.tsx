@@ -23,14 +23,14 @@ export const HotkeysModal: React.FC = () => {
   return (
     <div className="modal-overlay" onClick={() => setShowHotkeysModal(false)}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '560px', background: '#ffffff' }}>
-        <div className="modal-header" style={{ borderColor: '#e4e4e7' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Keyboard size={20} style={{ color: '#09090b' }} />
-            <h3 className="modal-title" style={{ color: '#09090b', fontWeight: 800 }}>Keyboard Hotkeys & Shortcuts</h3>
+        <div className="modal-header" style={{ borderColor: '#e4e4e7', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+            <Keyboard size={22} style={{ color: '#09090b' }} />
+            <h3 className="modal-title" style={{ color: '#09090b', fontWeight: 800, margin: 0 }}>Keyboard Hotkeys & Shortcuts</h3>
           </div>
           <button
             onClick={() => setShowHotkeysModal(false)}
-            style={{ background: 'none', border: 'none', color: '#71717a', cursor: 'pointer' }}
+            style={{ background: 'none', border: 'none', color: '#71717a', cursor: 'pointer', padding: '4px' }}
           >
             <X size={20} />
           </button>
