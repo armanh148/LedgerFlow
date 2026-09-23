@@ -7,6 +7,236 @@ import { Plus, Trash2, RotateCcw, Lock, Send, Search, UploadCloud, FileSpreadshe
 import { exportToCSV, exportToJSON } from '../utils/exportImportUtils';
 import { ImportModal } from '../components/ImportModal';
 
+interface AccountSelectCellProps {
+  value: string;
+  accounts: Account[];
+  onChange: (accountId: string) => void;
+}
+
+const AccountSelectCell: React.FC<AccountSelectCellProps> = ({ value, accounts, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  const selectedAccount = accounts.find(a => String(a.id) === String(value));
+
+  const toggleOpen = () => {
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const popoverWidth = Math.max(rect.width, 320);
+      const left = Math.max(10, Math.min(rect.left, window.innerWidth - popoverWidth - 10));
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const top = spaceBelow < 280 && rect.top > 280 ? rect.top - 280 : rect.bottom + 4;
+
+      setDropdownPos({
+        top,
+        left,
+        width: popoverWidth,
+      });
+      setSearch('');
+      setIsOpen(true);
+    } else {
+      setIsOpen(false);
+    }
+  };
+
+  const filteredAccounts = accounts.filter(acc => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      acc.code.toLowerCase().includes(q) ||
+      acc.name.toLowerCase().includes(q) ||
+      (acc.category && acc.category.toLowerCase().includes(q))
+    );
+  });
+
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={toggleOpen}
+        className="form-input font-mono"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          width: '100%',
+          cursor: 'pointer',
+          padding: '8px 12px',
+          background: '#FFFFFF',
+          textAlign: 'left',
+          borderColor: isOpen ? 'var(--primary)' : '#E5E7EB',
+          boxShadow: isOpen ? '0 0 0 3px rgba(249, 115, 22, 0.15)' : 'none',
+          color: selectedAccount ? '#111827' : '#9CA3AF',
+        }}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '6px' }}>
+          {selectedAccount ? `${selectedAccount.code} | ${selectedAccount.name}` : '-- Select Account --'}
+        </span>
+        <ChevronDown
+          size={14}
+          color="#9CA3AF"
+          style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease', flexShrink: 0 }}
+        />
+      </button>
+
+      {isOpen && dropdownPos && (
+        <>
+          <div
+            onClick={() => setIsOpen(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9998,
+              background: 'transparent',
+            }}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: `${dropdownPos.top}px`,
+              left: `${dropdownPos.left}px`,
+              width: `${dropdownPos.width}px`,
+              maxHeight: '280px',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '8px',
+              border: '1px solid #E5E7EB',
+              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+              zIndex: 9999,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              animation: 'fadeIn 0.12s ease-out',
+            }}
+          >
+            {/* Quick Search */}
+            <div style={{ padding: '8px', borderBottom: '1px solid #F3F4F6', background: '#FAFAFA' }}>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Search size={14} color="#9CA3AF" style={{ position: 'absolute', left: '10px' }} />
+                <input
+                  type="text"
+                  placeholder="Search code or account..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  autoFocus
+                  style={{
+                    width: '100%',
+                    padding: '6px 10px 6px 30px',
+                    fontSize: '0.82rem',
+                    borderRadius: '6px',
+                    border: '1px solid #E5E7EB',
+                    outline: 'none',
+                    background: '#FFFFFF',
+                    color: '#1F2937',
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') setIsOpen(false);
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Account List */}
+            <div style={{ overflowY: 'auto', maxHeight: '210px', padding: '4px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  onChange('');
+                  setIsOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '7px 10px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: !value ? 'var(--primary-light)' : 'transparent',
+                  color: !value ? 'var(--primary-dark)' : '#6B7280',
+                  fontSize: '0.82rem',
+                  fontStyle: 'italic',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  if (value) (e.currentTarget as HTMLElement).style.background = '#F3F4F6';
+                }}
+                onMouseLeave={(e) => {
+                  if (value) (e.currentTarget as HTMLElement).style.background = 'transparent';
+                }}
+              >
+                -- Select Account --
+              </button>
+
+              {filteredAccounts.length === 0 ? (
+                <div style={{ padding: '14px', textAlign: 'center', color: '#9CA3AF', fontSize: '0.82rem' }}>
+                  No accounts found
+                </div>
+              ) : (
+                filteredAccounts.map(acc => {
+                  const isSelected = String(acc.id) === String(value);
+                  return (
+                    <button
+                      key={acc.id}
+                      type="button"
+                      onClick={() => {
+                        onChange(String(acc.id));
+                        setIsOpen(false);
+                      }}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '8px 10px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        background: isSelected ? 'var(--primary-light)' : 'transparent',
+                        color: isSelected ? 'var(--primary-dark)' : '#1F2937',
+                        fontWeight: isSelected ? 700 : 500,
+                        fontSize: '0.84rem',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'background 0.15s ease',
+                        marginBottom: '2px',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) (e.currentTarget as HTMLElement).style.background = '#F3F4F6';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent';
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, overflow: 'hidden' }}>
+                        <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--primary-dark)', fontSize: '0.82rem' }}>
+                          {acc.code}
+                        </span>
+                        <span style={{ color: '#9CA3AF', fontSize: '0.75rem' }}>|</span>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {acc.name}
+                        </span>
+                        {acc.category && (
+                          <span style={{ fontSize: '0.72rem', color: '#9CA3AF', marginLeft: '2px', flexShrink: 0 }}>
+                            ({acc.category})
+                          </span>
+                        )}
+                      </div>
+                      {isSelected && <Check size={15} color="var(--primary)" style={{ flexShrink: 0, marginLeft: '6px' }} />}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 export const JournalVoucherFormView: React.FC = () => {
   const { showToast, activeRole } = useAuth();
   const { currencySymbol, formatCurrency } = useCurrency();
@@ -390,7 +620,7 @@ export const JournalVoucherFormView: React.FC = () => {
 
         {/* Dynamic Line Items Table */}
         <div className="table-container" style={{ marginBottom: '20px' }}>
-          <table className="data-table">
+          <table className="data-table" style={{ minWidth: '700px' }}>
             <thead>
               <tr>
                 <th style={{ width: '40%' }}>Account Name & Code</th>
@@ -404,18 +634,11 @@ export const JournalVoucherFormView: React.FC = () => {
               {items.map((item, index) => (
                 <tr key={index}>
                   <td>
-                    <select
-                      className="form-select font-mono"
+                    <AccountSelectCell
                       value={item.account}
-                      onChange={(e) => updateRow(index, 'account', e.target.value)}
-                    >
-                      <option value="">-- Select Account --</option>
-                      {accounts.map(acc => (
-                        <option key={acc.id} value={acc.id}>
-                          {acc.code} | {acc.name} ({acc.category})
-                        </option>
-                      ))}
-                    </select>
+                      accounts={accounts}
+                      onChange={(accountId) => updateRow(index, 'account', accountId)}
+                    />
                   </td>
                   <td>
                     <input
