@@ -411,26 +411,7 @@ export const BillsView: React.FC = () => {
                             if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent';
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span
-                              style={{
-                                fontSize: '0.7rem',
-                                padding: '2px 8px',
-                                borderRadius: '6px',
-                                background: '#FFFFFF',
-                                color: '#F97316',
-                                fontWeight: 700,
-                                letterSpacing: '0.02em',
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                              }}
-                            >
-                              {opt.id === 'ALL' ? 'All' : opt.id.replace('_', ' ')}
-                            </span>
-                            <span>{opt.label}</span>
-                          </div>
+                          <span>{opt.label}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>({count})</span>
                             {isSelected && <Check size={14} color="var(--primary)" />}

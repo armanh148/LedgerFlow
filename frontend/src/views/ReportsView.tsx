@@ -261,27 +261,8 @@ export const ReportsView: React.FC = () => {
                         }}
                       >
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span
-                              style={{
-                                fontSize: '0.68rem',
-                                padding: '2px 8px',
-                                borderRadius: '6px',
-                                background: '#FFFFFF',
-                                color: '#F97316',
-                                fontWeight: 700,
-                                letterSpacing: '0.02em',
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                              }}
-                            >
-                              {opt.id.toUpperCase()}
-                            </span>
-                            <span>{opt.label}</span>
-                          </div>
-                          <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', paddingLeft: '2px' }}>
+                          <span style={{ fontWeight: isSelected ? 600 : 500 }}>{opt.label}</span>
+                          <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
                             {opt.desc}
                           </span>
                         </div>
