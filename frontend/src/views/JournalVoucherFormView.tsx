@@ -6,6 +6,7 @@ import { useCurrency } from '../context/CurrencyContext';
 import { Plus, Trash2, RotateCcw, Lock, Send, Search, UploadCloud, FileSpreadsheet, FileCode, ChevronDown, Check } from 'lucide-react';
 import { exportToCSV, exportToJSON } from '../utils/exportImportUtils';
 import { ImportModal } from '../components/ImportModal';
+import { CustomDatePicker } from '../components/CustomDatePicker';
 
 interface AccountSelectCellProps {
   value: string;
@@ -52,7 +53,7 @@ const AccountSelectCell: React.FC<AccountSelectCellProps> = ({ value, accounts, 
   });
 
   return (
-    <div style={{ position: 'relative', width: '100%' }}>
+    <div style={{ position: 'relative', display: 'inline-block' }}>
       <button
         ref={buttonRef}
         type="button"
@@ -60,21 +61,21 @@ const AccountSelectCell: React.FC<AccountSelectCellProps> = ({ value, accounts, 
         className="form-input font-mono"
         title={selectedAccount ? `${selectedAccount.code} | ${selectedAccount.name} (${selectedAccount.category})` : 'Select Account'}
         style={{
-          display: 'flex',
+          display: 'inline-flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          width: '100%',
+          gap: '8px',
           cursor: 'pointer',
-          padding: '8px 12px',
+          padding: '6px 10px',
+          minWidth: '85px',
           background: '#FFFFFF',
-          textAlign: 'left',
           borderColor: isOpen ? 'var(--primary)' : '#E5E7EB',
           boxShadow: isOpen ? '0 0 0 3px rgba(249, 115, 22, 0.15)' : 'none',
           color: selectedAccount ? '#111827' : '#9CA3AF',
           fontWeight: selectedAccount ? 700 : 500,
+          fontSize: '0.85rem',
         }}
       >
-        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '6px' }}>
+        <span>
           {selectedAccount ? selectedAccount.code : '--'}
         </span>
         <ChevronDown
@@ -611,7 +612,7 @@ export const JournalVoucherFormView: React.FC = () => {
 
           <div>
             <label className="form-label">Posting Date</label>
-            <input type="date" className="form-input" value={date} onChange={(e) => setDate(e.target.value)} />
+            <CustomDatePicker value={date} onChange={setDate} />
           </div>
 
           <div>
@@ -625,11 +626,11 @@ export const JournalVoucherFormView: React.FC = () => {
           <table className="data-table" style={{ minWidth: '700px' }}>
             <thead>
               <tr>
-                <th style={{ width: '40%' }}>Account Name & Code</th>
-                <th style={{ width: '25%' }}>Description</th>
-                <th style={{ width: '15%', textAlign: 'right' }}>Debit ({currencySymbol})</th>
-                <th style={{ width: '15%', textAlign: 'right' }}>Credit ({currencySymbol})</th>
-                <th style={{ width: '5%', textAlign: 'center' }}>Action</th>
+                <th style={{ width: '16%' }}>Account #</th>
+                <th style={{ width: '44%' }}>Description</th>
+                <th style={{ width: '18%', textAlign: 'right' }}>Debit ({currencySymbol})</th>
+                <th style={{ width: '18%', textAlign: 'right' }}>Credit ({currencySymbol})</th>
+                <th style={{ width: '4%', textAlign: 'center' }}>Action</th>
               </tr>
             </thead>
             <tbody>
