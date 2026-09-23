@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { api } from '../api/client';
 import type { Account, JournalEntry, JournalItem, JournalEntryType } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
-import { Plus, Trash2, RotateCcw, Lock, Send, Search, UploadCloud, FileSpreadsheet, FileCode } from 'lucide-react';
+import { Plus, Trash2, RotateCcw, Lock, Send, Search, UploadCloud, FileSpreadsheet, FileCode, ChevronDown, Check } from 'lucide-react';
 import { exportToCSV, exportToJSON } from '../utils/exportImportUtils';
 import { ImportModal } from '../components/ImportModal';
 
@@ -15,6 +15,15 @@ export const JournalVoucherFormView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
+  const [showVoucherTypeDropdown, setShowVoucherTypeDropdown] = useState<boolean>(false);
+  const voucherTypeRef = useRef<HTMLDivElement>(null);
+
+  const voucherTypes: { value: JournalEntryType; label: string }[] = [
+    { value: 'STANDARD', label: 'Standard Journal (JV)' },
+    { value: 'PAYMENT', label: 'Payment Voucher (PV)' },
+    { value: 'RECEIPT', label: 'Receipt Voucher (RV)' },
+    { value: 'CONTRA', label: 'Contra Entry (CV)' },
+  ];
 
   // Form State
   const [entryType, setEntryType] = useState<JournalEntryType>('STANDARD');
@@ -222,7 +231,7 @@ export const JournalVoucherFormView: React.FC = () => {
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '90px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>High-Speed Journal Voucher Form</h2>
@@ -266,14 +275,101 @@ export const JournalVoucherFormView: React.FC = () => {
       {/* Voucher Header Form */}
       <div className="glass-panel" style={{ border: isBalanced ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-          <div>
+          <div style={{ position: 'relative' }} ref={voucherTypeRef}>
             <label className="form-label">Voucher Type</label>
-            <select className="form-select" value={entryType} onChange={(e) => setEntryType(e.target.value as JournalEntryType)}>
-              <option value="STANDARD">Standard Journal (JV)</option>
-              <option value="PAYMENT">Payment Voucher (PV)</option>
-              <option value="RECEIPT">Receipt Voucher (RV)</option>
-              <option value="CONTRA">Contra Entry (CV)</option>
-            </select>
+            <button
+              type="button"
+              onClick={() => setShowVoucherTypeDropdown(!showVoucherTypeDropdown)}
+              className="form-input"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                textAlign: 'left',
+                background: '#FFFFFF',
+                fontWeight: 500,
+                borderColor: showVoucherTypeDropdown ? 'var(--primary)' : undefined,
+                boxShadow: showVoucherTypeDropdown ? '0 0 0 3px rgba(249,115,22,0.15)' : undefined
+              }}
+            >
+              <span>{voucherTypes.find(v => v.value === entryType)?.label || 'Select Type'}</span>
+              <ChevronDown
+                size={16}
+                style={{
+                  color: 'var(--text-muted)',
+                  transform: showVoucherTypeDropdown ? 'rotate(180deg)' : 'none',
+                  transition: 'transform 0.2s ease',
+                  flexShrink: 0
+                }}
+              />
+            </button>
+
+            {showVoucherTypeDropdown && (
+              <>
+                <div
+                  style={{ position: 'fixed', inset: 0, zIndex: 90 }}
+                  onClick={() => setShowVoucherTypeDropdown(false)}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 4px)',
+                    left: 0,
+                    right: 0,
+                    zIndex: 95,
+                    background: '#FFFFFF',
+                    border: '1.5px solid var(--primary)',
+                    borderRadius: '10px',
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)',
+                    padding: '4px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px',
+                    maxHeight: '220px',
+                    overflowY: 'auto'
+                  }}
+                >
+                  {voucherTypes.map(v => {
+                    const isSelected = entryType === v.value;
+                    return (
+                      <button
+                        key={v.value}
+                        type="button"
+                        onClick={() => {
+                          setEntryType(v.value);
+                          setShowVoucherTypeDropdown(false);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: isSelected ? 'var(--primary-light)' : 'transparent',
+                          color: isSelected ? 'var(--primary-dark)' : '#1F2937',
+                          fontWeight: isSelected ? 700 : 500,
+                          fontSize: '0.88rem',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          transition: 'background 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isSelected) (e.currentTarget as HTMLElement).style.background = '#F3F4F6';
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent';
+                        }}
+                      >
+                        <span>{v.label}</span>
+                        {isSelected && <Check size={16} color="var(--primary)" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
 
           <div>
